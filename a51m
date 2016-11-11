@@ -1,0 +1,95 @@
+#!/bin/bash
+
+# source build/envsetup.sh && lunch sabresd_6dq-user && make 2>&1 | tee build-log.txt
+
+
+if [ $# != 1 ]; then
+    echo "USAGE:"
+    echo "    a51m <ub | bi | fs> "
+    echo "        1. ub: U-Boot compile."
+    echo "        2. bi: boot.img compile."
+    echo "        3. fs: system.img repack"
+    echo 
+    exit -1
+fi
+
+# for U-Boot compile
+if [ $1 = "ub" ]; then
+    for ubootplat in imx6q:mx6qsabresdandroid_config imx6dl:mx6dlsabresdandroid_config imx6qp:mx6qpsabresdandroid_config; do 
+        UBOOT_PLATFORM=`echo $ubootplat | cut -d':' -f1`; 
+        UBOOT_CONFIG=`echo $ubootplat | cut -d':' -f2`; 
+        echo ; 
+        echo ; 
+        make -C bootable/bootloader/uboot-imx/ distclean ARCH=arm CROSS_COMPILE=`pwd`/prebuilts/gcc/linux-x86/arm/arm-eabi-4.6/bin/arm-eabi-; 
+        make -C bootable/bootloader/uboot-imx/ $UBOOT_CONFIG ARCH=arm CROSS_COMPILE=`pwd`/prebuilts/gcc/linux-x86/arm/arm-eabi-4.6/bin/arm-eabi-;
+        make -C bootable/bootloader/uboot-imx/ ARCH=arm CROSS_COMPILE=`pwd`/prebuilts/gcc/linux-x86/arm/arm-eabi-4.6/bin/arm-eabi-; 
+
+        echo -e "\tcp bootable/bootloader/uboot-imx/u-boot.imx out/target/product/sabresd_6dq/u-boot-$UBOOT_PLATFORM.imx; "
+        cp bootable/bootloader/uboot-imx/u-boot.imx out/target/product/sabresd_6dq/u-boot-$UBOOT_PLATFORM.imx; 
+    done
+
+    echo -e "\n\033[32mGenerate u-boot.imx Work Over.\033[0m\n"
+
+    exit 0
+fi
+
+# for boot.img compile
+if [ $1 = "bi" ]; then
+    make -C kernel_imx ARCH=arm CROSS_COMPILE=`pwd`/prebuilts/gcc/linux-x86/arm/arm-eabi-4.6/bin/arm-eabi- LOADADDR=0x10008000
+    echo -e "\n\033[32m[Copy zImage file to target]:\033[0m"
+    echo -e "\tcp kernel_imx/arch/arm/boot/zImage  out/target/product/sabresd_6dq/kernel"
+    cp kernel_imx/arch/arm/boot/zImage  out/target/product/sabresd_6dq/kernel
+
+    echo -e "\n\033[32m[Copy dtb file to target]:\033[0m"
+    for dtsplat in imx6q:imx6q-sabresd.dtb imx6dl:imx6dl-sabresd.dtb imx6q-ldo:imx6q-sabresd-ldo.dtb imx6qp:imx6qp-sabresd.dtb; do 
+        DTS_PLATFORM=`echo $dtsplat | cut -d':' -f1`; 
+        DTS_BOARD=`echo $dtsplat | cut -d':' -f2`; 
+        echo -e "\tcp kernel_imx/arch/arm/boot/dts/$DTS_BOARD out/target/product/sabresd_6dq/$DTS_BOARD"
+        cp kernel_imx/arch/arm/boot/dts/$DTS_BOARD out/target/product/sabresd_6dq/$DTS_BOARD; 
+    done
+
+    echo -e "\n\033[32m[Generate ramdisk.img file to target]:\033[0m"
+    echo -e "\tout/host/linux-x86/bin/mkbootfs out/target/product/sabresd_6dq/root | out/host/linux-x86/bin/minigzip > out/target/product/sabresd_6dq/ramdisk.img"
+    out/host/linux-x86/bin/mkbootfs out/target/product/sabresd_6dq/root | out/host/linux-x86/bin/minigzip > out/target/product/sabresd_6dq/ramdisk.img
+
+    echo -e "\n\033[32m[Generate boot.img file to target]:\033[0m"
+    for dtsplat in imx6q:imx6q-sabresd.dtb imx6dl:imx6dl-sabresd.dtb imx6q-ldo:imx6q-sabresd-ldo.dtb imx6qp:imx6qp-sabresd.dtb; do 
+        DTS_PLATFORM=`echo $dtsplat | cut -d':' -f1`; 
+        DTS_BOARD=`echo $dtsplat | cut -d':' -f2`; 
+        BOOT_IMAGE_BOARD=out/target/product/sabresd_6dq/boot-$DTS_PLATFORM.img; 
+        out/host/linux-x86/bin/mkbootimg  --kernel out/target/product/sabresd_6dq/kernel --ramdisk out/target/product/sabresd_6dq/ramdisk.img --cmdline "console=ttymxc0,115200 init=/init video=mxcfb0:dev=ldb,bpp=32 video=mxcfb1:off video=mxcfb2:off video=mxcfb3:off vmalloc=256M androidboot.console=ttymxc0 consoleblank=0 androidboot.hardware=freescale cma=384M" --base 0x14000000 --second out/target/product/sabresd_6dq/$DTS_BOARD  --output out/target/product/sabresd_6dq/boot.img; 
+	out/host/linux-x86/bin/boot_signer /boot out/target/product/sabresd_6dq/boot.img build/target/product/security/verity.pk8 build/target/product/security/verity.x509.pem out/target/product/sabresd_6dq/boot.img; 
+        echo -e "\tcp -f out/target/product/sabresd_6dq/boot.img $BOOT_IMAGE_BOARD"
+        cp -f out/target/product/sabresd_6dq/boot.img $BOOT_IMAGE_BOARD; 
+    done
+
+    echo -e "\n\033[32mGenerate boot.img Work Over.\033[0m\n"
+
+    exit 0
+fi
+
+# for system.img repack
+if [ $1 = "fs" ]; then
+    make_ext4fs -s -T -1 -S out/target/product/sabresd_6dq/root/file_contexts -l 374476800 -a system out/target/product/sabresd_6dq/obj/PACKAGING/systemimage_intermediates/system.img out/target/product/sabresd_6dq/system
+    mkuserimg.sh -s out/target/product/sabresd_6dq/system out/target/product/sabresd_6dq/obj/PACKAGING/systemimage_intermediates/system.img ext4 system 374476800 out/target/product/sabresd_6dq/root/file_contexts
+    mkdir -p /tmp/tmpMr__Ct_verity_images
+    build_verity_tree -A aee087a5be3b982978c923f566a94613496b417f2af592639bc80d141e34dfe7 out/target/product/sabresd_6dq/obj/PACKAGING/systemimage_intermediates/system.img /tmp/tmpMr__Ct_verity_images/verity.img
+    system/extras/verity/build_verity_metadata.py 374476800 /tmp/tmpMr__Ct_verity_images/verity_metadata.img c05456d1171333727af2a3f82feb59856e56229fe81c75c90fd2a1359893a438 aee087a5be3b982978c923f566a94613496b417f2af592639bc80d141e34dfe7 /dev/block/mmcblk3p5 out/host/linux-x86/bin/verity_signer build/target/product/security/verity.pk8
+    append2simg out/target/product/sabresd_6dq/obj/PACKAGING/systemimage_intermediates/system.img /tmp/tmpMr__Ct_verity_images/verity_metadata.img
+    append2simg out/target/product/sabresd_6dq/obj/PACKAGING/systemimage_intermediates/system.img /tmp/tmpMr__Ct_verity_images/verity.img
+    mkdir -p out/target/product/sabresd_6dq/obj/PACKAGING/recovery_patch_intermediates/
+    PATH=out/host/linux-x86/bin:$PATH 
+    out/host/linux-x86/bin/imgdiff out/target/product/sabresd_6dq/boot.img out/target/product/sabresd_6dq/recovery.img out/target/product/sabresd_6dq/obj/PACKAGING/recovery_patch_intermediates/recovery_from_boot.p
+    out/host/linux-x86/bin/acp -fp out/target/product/sabresd_6dq/obj/PACKAGING/systemimage_intermediates/system.img out/target/product/sabresd_6dq/system.img
+
+    echo -e "\n\033[32mGenerate system.img Work Over.\033[0m\n"
+
+    exit 0
+fi
+
+echo "USAGE:"
+echo "    a51m <ub | bi | fs> "
+echo "        1. ub: U-Boot compile."
+echo "        2. bi: boot.img compile."
+echo "        3. fs: system.img repack"
+echo 

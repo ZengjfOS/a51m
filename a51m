@@ -13,6 +13,8 @@ if [ $# != 1 ]; then
     exit -1
 fi
 
+PATH=out/host/linux-x86/bin:$PATH
+
 # for U-Boot compile
 if [ $1 = "ub" ]; then
     for ubootplat in imx6q:mx6qsabresdandroid_config imx6dl:mx6dlsabresdandroid_config imx6qp:mx6qpsabresdandroid_config; do 
@@ -78,7 +80,7 @@ if [ $1 = "fs" ]; then
     append2simg out/target/product/sabresd_6dq/obj/PACKAGING/systemimage_intermediates/system.img /tmp/tmpMr__Ct_verity_images/verity_metadata.img
     append2simg out/target/product/sabresd_6dq/obj/PACKAGING/systemimage_intermediates/system.img /tmp/tmpMr__Ct_verity_images/verity.img
     mkdir -p out/target/product/sabresd_6dq/obj/PACKAGING/recovery_patch_intermediates/
-    PATH=out/host/linux-x86/bin:$PATH 
+    # PATH=out/host/linux-x86/bin:$PATH 
     out/host/linux-x86/bin/imgdiff out/target/product/sabresd_6dq/boot.img out/target/product/sabresd_6dq/recovery.img out/target/product/sabresd_6dq/obj/PACKAGING/recovery_patch_intermediates/recovery_from_boot.p
     out/host/linux-x86/bin/acp -fp out/target/product/sabresd_6dq/obj/PACKAGING/systemimage_intermediates/system.img out/target/product/sabresd_6dq/system.img
 

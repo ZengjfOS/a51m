@@ -37,7 +37,7 @@ fi
 
 # for boot.img compile
 if [ $1 = "bi" ]; then
-    make -C kernel_imx ARCH=arm CROSS_COMPILE=`pwd`/prebuilts/gcc/linux-x86/arm/arm-eabi-4.6/bin/arm-eabi- LOADADDR=0x10008000
+    make -C kernel_imx dtbs ARCH=arm CROSS_COMPILE=`pwd`/prebuilts/gcc/linux-x86/arm/arm-eabi-4.6/bin/arm-eabi- LOADADDR=0x10008000
     echo -e "\n\033[32m[Copy zImage file to target]:\033[0m"
     echo -e "\tcp kernel_imx/arch/arm/boot/zImage  out/target/product/sabresd_6dq/kernel"
     cp kernel_imx/arch/arm/boot/zImage  out/target/product/sabresd_6dq/kernel

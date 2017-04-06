@@ -14,7 +14,7 @@ if [ $# != 1 ]; then
 fi
 
 PATH=out/host/linux-x86/bin:$PATH
-kernel_cmdline="console=ttymxc0,115200 init=/init video=mxcfb0:dev=ldb,bpp=32 video=mxcfb1:off video=mxcfb2:off video=mxcfb3:off vmalloc=256M androidboot.console=ttymxc0 consoleblank=0 androidboot.hardware=freescale cma=384M"
+kernel_cmdline="console=ttymxc0,115200 init=/init video=mxcfb0:dev=ldb,bpp=32 video=mxcfb1:off video=mxcfb2:off video=mxcfb3:off vmalloc=256M androidboot.console=ttymxc0 consoleblank=0 androidboot.hardware=freescale cma=384M androidboot.selinux=disabled"
 
 # for U-Boot compile
 if [ $1 = "ub" ]; then
@@ -38,6 +38,7 @@ fi
 
 # for boot.img compile
 if [ $1 = "bi" ]; then
+    make -C kernel_imx -j4 uImage ARCH=arm CROSS_COMPILE=`pwd`/prebuilts/gcc/linux-x86/arm/arm-eabi-4.6/bin/arm-eabi- LOADADDR=0x10008000
     make -C kernel_imx dtbs ARCH=arm CROSS_COMPILE=`pwd`/prebuilts/gcc/linux-x86/arm/arm-eabi-4.6/bin/arm-eabi- LOADADDR=0x10008000
     echo -e "\n\033[32m[Copy zImage file to target]:\033[0m"
     echo -e "\tcp kernel_imx/arch/arm/boot/zImage  out/target/product/sabresd_6dq/kernel"

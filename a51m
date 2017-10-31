@@ -61,7 +61,7 @@ if [ $1 = "bi" ]; then
         DTS_PLATFORM=`echo $dtsplat | cut -d':' -f1`; 
         DTS_BOARD=`echo $dtsplat | cut -d':' -f2`; 
         BOOT_IMAGE_BOARD=out/target/product/sabresd_6dq/boot-$DTS_PLATFORM.img; 
-        out/host/linux-x86/bin/mkbootimg  --kernel out/target/product/sabresd_6dq/kernel --ramdisk out/target/product/sabresd_6dq/ramdisk.img --cmdline $kernel_cmdline --base 0x14000000 --second out/target/product/sabresd_6dq/$DTS_BOARD  --output out/target/product/sabresd_6dq/boot.img; 
+        out/host/linux-x86/bin/mkbootimg  --kernel out/target/product/sabresd_6dq/kernel --ramdisk out/target/product/sabresd_6dq/ramdisk.img --cmdline "$kernel_cmdline" --base 0x14000000 --second out/target/product/sabresd_6dq/$DTS_BOARD  --output out/target/product/sabresd_6dq/boot.img; 
 	out/host/linux-x86/bin/boot_signer /boot out/target/product/sabresd_6dq/boot.img build/target/product/security/verity.pk8 build/target/product/security/verity.x509.pem out/target/product/sabresd_6dq/boot.img; 
         echo -e "\tcp -f out/target/product/sabresd_6dq/boot.img $BOOT_IMAGE_BOARD"
         cp -f out/target/product/sabresd_6dq/boot.img $BOOT_IMAGE_BOARD; 
